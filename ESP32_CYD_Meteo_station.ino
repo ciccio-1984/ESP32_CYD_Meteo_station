@@ -1,4 +1,5 @@
-/* Meteo Station for ESP32 CYD*/
+/* Meteo Station for ESP32 CYD
+   Create by Ciccio-1984   --   2026*/
 
 #include <WebServer.h>
 #include <lvgl.h>
