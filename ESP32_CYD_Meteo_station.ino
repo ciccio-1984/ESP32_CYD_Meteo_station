@@ -19,9 +19,6 @@ String passSaved;
 
 // -------------------- NTP --------------------
 const char* ntpServer = "pool.ntp.org";
-long gmtOffset_sec = 3600;
-int daylightOffset_sec = 3600;
-
 
 // -------------------- PAGINA WEB PROVISIONING --------------------
 void handleRoot() {
@@ -59,9 +56,9 @@ void handleRoot() {
 
   for (int i = 0; i < n; i++) {
     int rssi = WiFi.RSSI(i);
-    String strength = (rssi > -60) ? "🔵🔵🔵🔵 Forte" :
-                      (rssi > -70) ? "🔵🔵🔵 Medio" :
-                      (rssi > -80) ? "🔵🔵 Debole" : "🔵 Molto debole";
+    String strength = (rssi > -60) ? "IIII - Forte" :
+                      (rssi > -70) ? "III - Medio" :
+                      (rssi > -80) ? "II - Debole" : "I - Molto debole";
 
     html += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" + strength + ")</option>";
   }
@@ -117,12 +114,12 @@ bool tryConnectWiFi() {
 
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    lv_task_handler();   // la GUI continua a funzionare
+    lv_task_handler();
     lv_tick_inc(5);
     delay(5);
 
     if (millis() - start > 8000) {
-      return false;      // timeout
+      return false;
     }
   }
 
@@ -131,7 +128,7 @@ bool tryConnectWiFi() {
 
 // -------------------- NTP --------------------
 void initNTP() {
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  configTzTime("CET-1CEST,M3.5.0/2,M10.5.0/3", ntpServer);  // string for italy
 }
 
 String getDateString() {
@@ -144,12 +141,12 @@ String getDateString() {
 }
 
 // Replace with the latitude and longitude to where you want to get the weather
-String latitude = "XXXXXXXXX";
-String longitude = "XXXXXXXXXXX";
+String latitude = "xxxxxxxxxxx"; // insert you latitude to www.opem-meteo.com
+String longitude = "xxxxxxxxxxx";   // insert you longitude to www.opem-meteo.com
 // Enter your location
-String location = "XXXXXXXXXXXX";
+String location = "xxxxxxxxxxx";
 // Type the timezone you want to get the time for
-String timezone = "Europe/Rome";
+String timezone = "Europe/Berlin";  // insert you timezone to www.opem-meteo.com
 
 // Store date and time
 String current_date;
@@ -177,7 +174,6 @@ String weather_description;
 #define DRAW_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
 uint32_t draw_buf[DRAW_BUF_SIZE / 4];
 
-// If logging is enabled, it will inform the user about what is happening in the library
 void log_print(lv_log_level_t level, const char * buf) {
   LV_UNUSED(level);
   Serial.println(buf);
@@ -258,7 +254,7 @@ void lv_create_main_gui(void) {
   lv_obj_align(text_label_time_location, LV_ALIGN_BOTTOM_MID, 0, -10);
   lv_obj_set_style_text_font((lv_obj_t*) text_label_time_location, &lv_font_montserrat_12, 0);
 
-  lv_timer_t * timer_hour = lv_timer_create(timer_cb_hour, 60000, NULL);
+  lv_timer_t * timer_hour = lv_timer_create(timer_cb_hour, 1000, NULL);
   lv_timer_ready(timer_hour);
 
   lv_timer_t * timer_gui = lv_timer_create(timer_cb_gui, 600000, NULL);
@@ -444,27 +440,22 @@ void setup() {
   String LVGL_Arduino = String("LVGL Library Version: ") + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
   
-  // Start LVGL
   lv_init();
-  // Register print function for debugging
   lv_log_register_print_cb(log_print);
 
-  // Create a display object
   lv_display_t * disp;
-  // Initialize the TFT display using the TFT_eSPI library
   disp = lv_tft_espi_create(SCREEN_WIDTH, SCREEN_HEIGHT, draw_buf, sizeof(draw_buf));
   lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
 
-  // Function to draw the GUI
   lv_create_main_gui();
 
   // Connect to Wi-Fi
   if (!tryConnectWiFi()) {
     startAPMode();   // AP per configurazione
   } else {
-    initNTP();       // Connessione OK → NTP
+    initNTP();      // connessione OK --> NTP
+    
   }
-  
 }
 
 void loop() {
@@ -473,7 +464,7 @@ void loop() {
     server.handleClient();
   }
 
-  lv_task_handler();  // let the GUI do its work
-  lv_tick_inc(5);     // tell LVGL how much time has passed
-  delay(5);           // let this time pass
+  lv_task_handler();
+  lv_tick_inc(5);
+  delay(5);
 }
