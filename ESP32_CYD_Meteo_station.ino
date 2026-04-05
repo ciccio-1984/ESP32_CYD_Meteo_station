@@ -11,6 +11,16 @@
 #include <ArduinoJson.h>
 #include <time.h>
 
+#define DEBUG // comment for deactive DEBUG
+
+#ifdef DEBUG
+  #define prt(x) Serial.print(x)
+  #define prtn(x) Serial.println(x)
+#else
+  #define prt(x)
+  #define prtn(x)
+#endif
+
 // -------------------- WIFI PROVISIONING --------------------
 Preferences prefs;
 WebServer server(80);
@@ -122,8 +132,7 @@ bool tryConnectWiFi() {
       return false;
     }
   }
-
-  return true;
+   return true;
 }
 
 // -------------------- NTP --------------------
@@ -141,12 +150,12 @@ String getDateString() {
 }
 
 // Replace with the latitude and longitude to where you want to get the weather
-String latitude = "xxxxxxxxxxx"; // insert you latitude to www.opem-meteo.com
-String longitude = "xxxxxxxxxxx";   // insert you longitude to www.opem-meteo.com
+String latitude = "XXXXXXXXXX"; // insert you latitude to www.opem-meteo.com
+String longitude = "XXXXXXXXXX";   // insert you longitude to www.opem-meteo.com
 // Enter your location
-String location = "xxxxxxxxxxx";
+String location = "XXXXXXXXXX";
 // Type the timezone you want to get the time for
-String timezone = "Europe/Berlin";  // insert you timezone to www.opem-meteo.com
+String timezone = "Europe/Rome";  // insert you timezone to www.opem-meteo.com
 
 // Store date and time
 String current_date;
@@ -176,7 +185,7 @@ uint32_t draw_buf[DRAW_BUF_SIZE / 4];
 
 void log_print(lv_log_level_t level, const char * buf) {
   LV_UNUSED(level);
-  Serial.println(buf);
+  prtn(buf);
   Serial.flush();
 }
 
@@ -193,6 +202,11 @@ static void timer_cb_hour(lv_timer_t * timer_hour){
   lv_label_set_text(text_label_date, getDateString().c_str());
 }
 
+static void timer_cb_ntp(lv_timer_t * timer_ntp){
+  LV_UNUSED(timer_ntp);
+  initNTP();
+}
+
 static void timer_cb_gui(lv_timer_t * timer_gui){
   LV_UNUSED(timer_gui);
   get_weather_data();
@@ -200,7 +214,7 @@ static void timer_cb_gui(lv_timer_t * timer_gui){
   lv_label_set_text(text_label_temperature, String("      " + temperature + degree_symbol).c_str());
   lv_label_set_text(text_label_humidity, String("   " + humidity + "%").c_str());
   lv_label_set_text(text_label_weather_description, weather_description.c_str());
-  lv_label_set_text(text_label_time_location, String("Last Update: " + last_weather_update + "  |  " + location).c_str());
+  lv_label_set_text(text_label_time_location, String("Aggiornato alle " + last_weather_update + "  |  " + location).c_str());
 }
 
 void lv_create_main_gui(void) {
@@ -250,7 +264,7 @@ void lv_create_main_gui(void) {
 
   // Create a text label for the time and timezone aligned center in the bottom of the screen
   text_label_time_location = lv_label_create(lv_screen_active());
-  lv_label_set_text(text_label_time_location, String("Last Update: " + last_weather_update + "  |  " + location).c_str());
+  lv_label_set_text(text_label_time_location, String("Aggiornato alle " + last_weather_update + "  |  " + location).c_str());
   lv_obj_align(text_label_time_location, LV_ALIGN_BOTTOM_MID, 0, -10);
   lv_obj_set_style_text_font((lv_obj_t*) text_label_time_location, &lv_font_montserrat_12, 0);
 
@@ -259,6 +273,9 @@ void lv_create_main_gui(void) {
 
   lv_timer_t * timer_gui = lv_timer_create(timer_cb_gui, 600000, NULL);
   lv_timer_ready(timer_gui);
+
+  lv_timer_t * timer_ntp = lv_timer_create(timer_cb_ntp, 12 * 60 * 60 * 1000, NULL);
+  lv_timer_ready(timer_ntp);
 }
 
 void get_weather_description(int code) {
@@ -395,8 +412,8 @@ void get_weather_data() {
       // Check for the response
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
-        //Serial.println("Request information:");
-        //Serial.println(payload);
+        //prtn("Request information:");
+        //prtn(payload);
         // Parse the JSON to extract the time
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, payload);
@@ -406,30 +423,25 @@ void get_weather_data() {
           humidity = String(doc["current"]["relative_humidity_2m"]);
           is_day = String(doc["current"]["is_day"]).toInt();
           weather_code = String(doc["current"]["weather_code"]).toInt();
-          /*Serial.println(temperature);
-          Serial.println(humidity);
-          Serial.println(is_day);
-          Serial.println(weather_code);
-          Serial.println(String(timezone));*/
+          /*prtn(temperature);
+          prtn(humidity);
+          prtn(is_day);
+          prtn(weather_code);
+          prtn(String(timezone));*/
           // Split the datetime into date and time
           String datetime_str = String(datetime);
           int splitIndex = datetime_str.indexOf('T');
           current_date = datetime_str.substring(0, splitIndex);
           last_weather_update = datetime_str.substring(splitIndex + 1, splitIndex + 9); // Extract time portion
         } else {
-          Serial.print("deserializeJson() failed: ");
-          Serial.println(error.c_str());
+          prt("deserializeJson() failed: ");
+          prtn(error.c_str());
         }
       }
       else {
-        Serial.println("Failed");
+        prtn("Failed");
       }
-    } else {
-      Serial.printf("GET request failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
-    http.end(); // Close connection
-  } else {
-    Serial.println("Not connected to Wi-Fi");
   }
 }
 
@@ -438,7 +450,7 @@ void setup() {
   prefs.begin("wifi", false);
 
   String LVGL_Arduino = String("LVGL Library Version: ") + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  Serial.println(LVGL_Arduino);
+  prtn(LVGL_Arduino);
   
   lv_init();
   lv_log_register_print_cb(log_print);
@@ -453,8 +465,7 @@ void setup() {
   if (!tryConnectWiFi()) {
     startAPMode();   // AP per configurazione
   } else {
-    initNTP();      // connessione OK --> NTP
-    
+    initNTP();
   }
 }
 
