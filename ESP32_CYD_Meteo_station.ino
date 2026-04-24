@@ -150,11 +150,9 @@ String getDateString() {
 }
 
 // Replace with the latitude and longitude to where you want to get the weather
-String latitude = "XXXXXXXXXX"; // insert you latitude to www.opem-meteo.com
-String longitude = "XXXXXXXXXX";   // insert you longitude to www.opem-meteo.com
-// Enter your location
-String location = "XXXXXXXXXX";
-// Type the timezone you want to get the time for
+String latitude = "XXXXX"; // insert you latitude to www.opem-meteo.com
+String longitude = "XXXXX";   // insert you longitude to www.opem-meteo.com
+String location = "XXXXX";  // insert you location
 String timezone = "Europe/Rome";  // insert you timezone to www.opem-meteo.com
 
 // Store date and time
@@ -162,7 +160,6 @@ String current_date;
 String last_weather_update;
 String temperature;
 String humidity;
-int is_day;
 int weather_code = 0;
 String weather_description;
 
@@ -223,7 +220,6 @@ void lv_create_main_gui(void) {
   LV_IMAGE_DECLARE(image_weather_rain);
   LV_IMAGE_DECLARE(image_weather_thunder);
   LV_IMAGE_DECLARE(image_weather_snow);
-  LV_IMAGE_DECLARE(image_weather_night);
   LV_IMAGE_DECLARE(image_weather_temperature);
   LV_IMAGE_DECLARE(image_weather_humidity);
 
@@ -271,23 +267,21 @@ void lv_create_main_gui(void) {
   lv_timer_t * timer_hour = lv_timer_create(timer_cb_hour, 1000, NULL);
   lv_timer_ready(timer_hour);
 
-  lv_timer_t * timer_gui = lv_timer_create(timer_cb_gui, 600000, NULL);
+  lv_timer_t * timer_gui = lv_timer_create(timer_cb_gui, 20 * 60 * 1000, NULL);
   lv_timer_ready(timer_gui);
 
-  lv_timer_t * timer_ntp = lv_timer_create(timer_cb_ntp, 12 * 60 * 60 * 1000, NULL);
+  lv_timer_t * timer_ntp = lv_timer_create(timer_cb_ntp, 24 * 60 * 60 * 1000, NULL);
   lv_timer_ready(timer_ntp);
 }
 
 void get_weather_description(int code) {
   switch (code) {
     case 0:
-      if(is_day==1) { lv_image_set_src(weather_image, &image_weather_sun); }
-      else { lv_image_set_src(weather_image, &image_weather_night); }
+      lv_image_set_src(weather_image, &image_weather_sun);
       weather_description = "CIELO LIMPIDO";
       break;
     case 1: 
-      if(is_day==1) { lv_image_set_src(weather_image, &image_weather_sun); }
-      else { lv_image_set_src(weather_image, &image_weather_night); }
+      lv_image_set_src(weather_image, &image_weather_sun);
       weather_description = "CIELO VELATO";
       break;
     case 2: 
@@ -404,7 +398,7 @@ void get_weather_data() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     // Construct the API endpoint
-    String url = String("http://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude + "&current=temperature_2m,relative_humidity_2m,is_day,precipitation,rain,weather_code" + temperature_unit + "&timezone=" + timezone + "&forecast_days=1");
+    String url = String("http://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude + "&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code" + temperature_unit + "&timezone=" + timezone + "&forecast_days=1");
     http.begin(url);
     int httpCode = http.GET(); // Make the GET request
 
@@ -421,7 +415,6 @@ void get_weather_data() {
           const char* datetime = doc["current"]["time"];
           temperature = String(doc["current"]["temperature_2m"]);
           humidity = String(doc["current"]["relative_humidity_2m"]);
-          is_day = String(doc["current"]["is_day"]).toInt();
           weather_code = String(doc["current"]["weather_code"]).toInt();
           /*prtn(temperature);
           prtn(humidity);
