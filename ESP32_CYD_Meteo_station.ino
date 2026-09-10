@@ -11,7 +11,7 @@
 #include <ArduinoJson.h>
 #include <time.h>
 
-#define DEBUG // comment for deactive DEBUG
+// #define DEBUG // comment for deactive DEBUG
 
 #ifdef DEBUG
   #define prt(x) Serial.print(x)
@@ -150,9 +150,9 @@ String getDateString() {
 }
 
 // Replace with the latitude and longitude to where you want to get the weather
-String latitude = "XXXXX"; // insert you latitude to www.opem-meteo.com
-String longitude = "XXXXX";   // insert you longitude to www.opem-meteo.com
-String location = "XXXXX";  // insert you location
+String latitude = "XXXXXXX"; // insert you latitude to www.opem-meteo.com
+String longitude = "XXXXXXXX";   // insert you longitude to www.opem-meteo.com
+String location = "XXXXXXXX";  // insert you location
 String timezone = "Europe/Rome";  // insert you timezone to www.opem-meteo.com
 
 // Store date and time
